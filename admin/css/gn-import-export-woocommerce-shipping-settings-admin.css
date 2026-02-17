@@ -2,3 +2,15 @@
  * All of the CSS for your admin-specific functionality should be
  * included in this file.
  */
+
+.gn-ie-wcss-admin .gn-ie-wcss-form {
+	max-width: 900px;
+}
+
+.gn-ie-wcss-admin code {
+	padding: 2px 6px;
+}
+
+.gn-ie-wcss-admin .description {
+	margin-top: 6px;
+}
