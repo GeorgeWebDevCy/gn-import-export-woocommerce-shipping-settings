@@ -56,6 +56,32 @@ class Gn_Import_Export_Woocommerce_Shipping_Settings_Admin {
 	}
 
 	/**
+	 * Add quick action link on Plugins screen.
+	 *
+	 * @param array $links Existing action links.
+	 * @return array
+	 */
+	public function add_plugin_action_links( $links ) {
+		if ( ! is_array( $links ) || ! $this->current_user_can_manage_imports() ) {
+			return $links;
+		}
+
+		$plugin_admin_url = add_query_arg(
+			array(
+				'page' => $this->plugin_name,
+			),
+			admin_url( 'admin.php' )
+		);
+
+		array_unshift(
+			$links,
+			'<a href="' . esc_url( $plugin_admin_url ) . '">' . esc_html__( 'Shipping Import', 'gn-import-export-woocommerce-shipping-settings' ) . '</a>'
+		);
+
+		return $links;
+	}
+
+	/**
 	 * Render page.
 	 */
 	public function render_admin_page() {
