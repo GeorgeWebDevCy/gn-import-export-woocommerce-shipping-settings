@@ -70,7 +70,7 @@ class Gn_Import_Export_Woocommerce_Shipping_Settings {
 		if ( defined( 'GN_IMPORT_EXPORT_WOOCOMMERCE_SHIPPING_SETTINGS_VERSION' ) ) {
 			$this->version = GN_IMPORT_EXPORT_WOOCOMMERCE_SHIPPING_SETTINGS_VERSION;
 		} else {
-			$this->version = '1.0.0';
+			$this->version = '1.1.0';
 		}
 		$this->plugin_name = 'gn-import-export-woocommerce-shipping-settings';
 

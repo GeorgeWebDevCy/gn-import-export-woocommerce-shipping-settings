@@ -9,14 +9,14 @@
  * that starts the plugin.
  *
  * @link              https://www.georgenicolaou.me/
- * @since             1.0.0
+ * @since             1.1.0
  * @package           Gn_Import_Export_Woocommerce_Shipping_Settings
  *
  * @wordpress-plugin
  * Plugin Name:       GN Import Export Woocommerce Shipping Settings
  * Plugin URI:        https://www.georgenicolaou.me/gn-import-export-woocommerce-shipping-settings
  * Description:       Import & Export Woocommerce shipping zones, rates and other hsipping settings easily
- * Version:           1.0.0
+ * Version:           1.1.0
  * Author:            George Nicolaou
  * Author URI:        https://www.georgenicolaou.me//
  * License:           GPL-2.0+
@@ -38,10 +38,10 @@ if ( file_exists( $gn_import_export_woocommerce_shipping_settings_autoloader ) )
 
 /**
  * Currently plugin version.
- * Start at version 1.0.0 and use SemVer - https://semver.org
+ * Start at version 1.1.0 and use SemVer - https://semver.org
  * Rename this for your plugin and update it as you release new versions.
  */
-define( 'GN_IMPORT_EXPORT_WOOCOMMERCE_SHIPPING_SETTINGS_VERSION', '1.0.0' );
+define( 'GN_IMPORT_EXPORT_WOOCOMMERCE_SHIPPING_SETTINGS_VERSION', '1.1.0' );
 
 /**
  * Check whether WooCommerce is active.

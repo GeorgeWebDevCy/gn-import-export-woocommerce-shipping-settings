@@ -31,11 +31,20 @@ Before importing, use **Analyze Dump Preview** on the admin screen to inspect:
 
 ## Import Workflow
 
-1. Open **WooCommerce > Shipping Import**.
+1. Open **Shipping Import** from the WordPress admin menu.
 2. Upload a dump file (`.sql`, `.zip`, `.gz`).
 3. Click **Analyze Dump Preview** and review source vs destination.
 4. Click **Backup Database and Import Shipping Data**.
 5. Review admin notice details for imported counts, detected source prefix, target prefix, and backup file path.
+
+## Release Notes
+
+### 1.1.0
+
+- Added a standalone top-level **Shipping Import** admin menu.
+- Added a Plugins screen quick link that opens the plugin admin page directly.
+- Added source vs destination preview with detected tables, detected prefixes, and sample row content.
+- Added color-highlighted comparison statuses for easier pre-import review.
 
 ## WooCommerce Shipping Storage Context
 

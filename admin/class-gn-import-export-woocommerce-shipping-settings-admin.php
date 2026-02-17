@@ -42,16 +42,17 @@ class Gn_Import_Export_Woocommerce_Shipping_Settings_Admin {
 	}
 
 	/**
-	 * Add submenu.
+	 * Add standalone admin menu.
 	 */
 	public function add_plugin_admin_menu() {
-		$this->admin_page_hook_suffix = add_submenu_page(
-			'woocommerce',
+		$this->admin_page_hook_suffix = add_menu_page(
 			__( 'Shipping Import', 'gn-import-export-woocommerce-shipping-settings' ),
 			__( 'Shipping Import', 'gn-import-export-woocommerce-shipping-settings' ),
 			'manage_woocommerce',
 			$this->plugin_name,
-			array( $this, 'render_admin_page' )
+			array( $this, 'render_admin_page' ),
+			'dashicons-database-import',
+			56
 		);
 	}
 

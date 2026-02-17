@@ -5,7 +5,7 @@ Tags: woocommerce, shipping, import, export, migration, sql
 Requires at least: 5.8
 Requires PHP: 7.4
 Tested up to: 6.9.1
-Stable tag: 1.0.0
+Stable tag: 1.1.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -60,7 +60,7 @@ You can review:
 1. Upload the plugin folder to `/wp-content/plugins/` or install it via Plugins > Add New.
 2. Activate the plugin through the **Plugins** screen in WordPress.
 3. Make sure WooCommerce is installed and active.
-4. Go to **WooCommerce > Shipping Import**.
+4. Go to **Shipping Import** in the WordPress admin menu.
 5. Upload your dump file and run **Analyze Dump Preview**.
 6. Click **Backup Database and Import Shipping Data** to complete import.
 
@@ -90,6 +90,13 @@ Yes. The plugin creates a backup of current-prefix tables before applying import
 
 == Changelog ==
 
+= 1.1.0 =
+* Added standalone top-level admin menu for Shipping Import.
+* Added Plugins screen action link to open Shipping Import directly.
+* Added source vs destination preview (detected tables, prefixes, sample content).
+* Added color-highlighted comparison statuses (match, different, missing table).
+* Improved readme documentation and admin workflow clarity.
+
 = 1.0.0 =
 * Initial public release.
 * Added SQL/GZ/ZIP shipping import support.
@@ -98,6 +105,9 @@ Yes. The plugin creates a backup of current-prefix tables before applying import
 * Added color-highlighted comparison statuses for easier review.
 
 == Upgrade Notice ==
+
+= 1.1.0 =
+Adds a standalone admin menu, a Plugins page quick link, and a richer pre-import source/destination preview.
 
 = 1.0.0 =
 Initial release of GN Import Export WooCommerce Shipping Settings.
