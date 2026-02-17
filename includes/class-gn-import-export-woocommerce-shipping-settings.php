@@ -157,11 +157,7 @@ class Gn_Import_Export_Woocommerce_Shipping_Settings {
 		$this->loader->add_action( 'admin_menu', $plugin_admin, 'add_plugin_admin_menu' );
 		$this->loader->add_action( 'admin_post_gn_import_export_woocommerce_shipping_settings_import', $plugin_admin, 'handle_import_action' );
 		$this->loader->add_action( 'wp_ajax_gn_ie_wcss_preview_dump', $plugin_admin, 'handle_preview_action' );
-		$this->loader->add_filter(
-			'plugin_action_links_' . $this->plugin_name . '/' . $this->plugin_name . '.php',
-			$plugin_admin,
-			'add_plugin_action_links'
-		);
+		$this->loader->add_filter( 'plugin_action_links', $plugin_admin, 'add_plugin_action_links', 10, 2 );
 		$this->loader->add_action( 'admin_notices', $plugin_admin, 'maybe_display_admin_notice' );
 		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_styles' );
 		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_scripts' );

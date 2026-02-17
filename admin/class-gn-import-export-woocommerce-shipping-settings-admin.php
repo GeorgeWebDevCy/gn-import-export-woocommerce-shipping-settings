@@ -59,11 +59,20 @@ class Gn_Import_Export_Woocommerce_Shipping_Settings_Admin {
 	/**
 	 * Add quick action link on Plugins screen.
 	 *
-	 * @param array $links Existing action links.
+	 * @param array  $links Existing action links.
+	 * @param string $plugin_file Plugin file basename.
 	 * @return array
 	 */
-	public function add_plugin_action_links( $links ) {
-		if ( ! is_array( $links ) || ! $this->current_user_can_manage_imports() ) {
+	public function add_plugin_action_links( $links, $plugin_file = '' ) {
+		if ( ! is_array( $links ) ) {
+			return $links;
+		}
+
+		if ( $this->get_plugin_basename() !== $plugin_file ) {
+			return $links;
+		}
+
+		if ( ! current_user_can( 'activate_plugins' ) ) {
 			return $links;
 		}
 
@@ -80,6 +89,15 @@ class Gn_Import_Export_Woocommerce_Shipping_Settings_Admin {
 		);
 
 		return $links;
+	}
+
+	/**
+	 * Get plugin basename for filter comparisons.
+	 *
+	 * @return string
+	 */
+	private function get_plugin_basename() {
+		return plugin_basename( dirname( __DIR__ ) . '/gn-import-export-woocommerce-shipping-settings.php' );
 	}
 
 	/**
