@@ -1,0 +1,1 @@
+# gn-import-export-woocommerce-shipping-settings
