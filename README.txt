@@ -1,114 +1,103 @@
-=== Plugin Name ===
-Contributors: (this should be a list of wordpress.org userid's)
-Donate link: https://www.georgenicolaou.me//
-Tags: comments, spam
-Requires at least: 3.0.1
-Tested up to: 3.4
-Stable tag: 4.3
+=== GN Import Export WooCommerce Shipping Settings ===
+Contributors: orionaselite
+Donate link: https://www.georgenicolaou.me/
+Tags: woocommerce, shipping, import, export, migration, sql
+Requires at least: 5.8
+Requires PHP: 7.4
+Tested up to: 6.9.1
+Stable tag: 1.0.0
 License: GPLv2 or later
-License URI: http://www.gnu.org/licenses/gpl-2.0.html
+License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Here is a short description of the plugin.  This should be no more than 150 characters.  No markup here.
+Import WooCommerce shipping zones, methods, locations, and shipping settings from SQL dump files, with source vs destination preview.
 
 == Description ==
 
-This is the long description.  No limit, and you can use Markdown (as well as in the following sections).
+GN Import Export WooCommerce Shipping Settings helps you migrate WooCommerce shipping configuration between WordPress sites.
 
-For backwards compatibility, if this section is missing, the full length of the short description will be used, and
-Markdown parsed.
+This plugin imports shipping data from `.sql`, `.zip` (with SQL inside), and `.gz` dump files and maps it to the current site's active DB prefix.
 
-A few notes about the sections above:
+= Key features =
 
-*   "Contributors" is a comma separated list of wp.org/wp-plugins.org usernames
-*   "Tags" is a comma separated list of tags that apply to the plugin
-*   "Requires at least" is the lowest version that the plugin will work on
-*   "Tested up to" is the highest version that you've *successfully used to test the plugin*. Note that it might work on
-higher versions... this is just the highest one you've verified.
-*   Stable tag should indicate the Subversion "tag" of the latest stable version, or "trunk," if you use `/trunk/` for
-stable.
+* Detects source DB prefix from the uploaded dump.
+* Detects source shipping tables found in the dump file.
+* Provides source and destination side-by-side preview before import.
+* Shows sample content rows for each shipping table.
+* Highlights source, destination, and change status with clear colors.
+* Creates a database backup (for current DB prefix tables) before import.
+* Imports WooCommerce shipping data into destination tables.
 
-    Note that the `readme.txt` of the stable tag is the one that is considered the defining one for the plugin, so
-if the `/trunk/readme.txt` file says that the stable tag is `4.3`, then it is `/tags/4.3/readme.txt` that'll be used
-for displaying information about the plugin.  In this situation, the only thing considered from the trunk `readme.txt`
-is the stable tag pointer.  Thus, if you develop in trunk, you can update the trunk `readme.txt` to reflect changes in
-your in-development version, without having that information incorrectly disclosed about the current stable version
-that lacks those changes -- as long as the trunk's `readme.txt` points to the correct stable tag.
+= What gets imported =
 
-    If no stable tag is provided, it is assumed that trunk is stable, but you should specify "trunk" if that's where
-you put the stable version, in order to eliminate any doubt.
+* Shipping zones table: `{prefix}woocommerce_shipping_zones`
+* Shipping zone locations table: `{prefix}woocommerce_shipping_zone_locations`
+* Shipping zone methods table: `{prefix}woocommerce_shipping_zone_methods`
+* Shipping settings in `{prefix}options` where `option_name` matches:
+  `woocommerce_{method_id}_{instance_id}_settings`
+
+= Admin preview =
+
+Before importing, click **Analyze Dump Preview** on the plugin admin page.
+
+You can review:
+
+* Source prefix and detected source table names.
+* Source row counts and sample rows.
+* Destination (current site) prefix, row counts, and sample rows.
+* Comparison status for each table:
+  * Match
+  * Different
+  * Missing table
+
+= Prefix behavior =
+
+* Source prefix is detected from the uploaded dump.
+* Destination prefix is always the current site's `$wpdb->prefix`.
+* Import writes data into destination tables using destination prefix.
 
 == Installation ==
 
-This section describes how to install the plugin and get it working.
-
-e.g.
-
-1. Upload `gn-import-export-woocommerce-shipping-settings.php` to the `/wp-content/plugins/` directory
-1. Activate the plugin through the 'Plugins' menu in WordPress
-1. Place `<?php do_action('plugin_name_hook'); ?>` in your templates
+1. Upload the plugin folder to `/wp-content/plugins/` or install it via Plugins > Add New.
+2. Activate the plugin through the **Plugins** screen in WordPress.
+3. Make sure WooCommerce is installed and active.
+4. Go to **WooCommerce > Shipping Import**.
+5. Upload your dump file and run **Analyze Dump Preview**.
+6. Click **Backup Database and Import Shipping Data** to complete import.
 
 == Frequently Asked Questions ==
 
-= A question that someone might have =
+= Does this plugin work without WooCommerce? =
 
-An answer to that question.
+No. WooCommerce must be active. The plugin self-deactivates if WooCommerce is missing or deactivated.
 
-= What about foo bar? =
+= Which file formats are supported? =
 
-Answer to foo bar dilemma.
+`.sql`, `.zip` (containing SQL), and `.gz` SQL dump files.
+
+= Will this overwrite existing shipping settings? =
+
+Yes. Existing shipping zones, methods, locations, and matching shipping settings are reset/replaced during import.
+
+= Is a backup created before import? =
+
+Yes. The plugin creates a backup of current-prefix tables before applying import changes.
 
 == Screenshots ==
 
-1. This screen shot description corresponds to screenshot-1.(png|jpg|jpeg|gif). Note that the screenshot is taken from
-the /assets directory or the directory that contains the stable readme.txt (tags or trunk). Screenshots in the /assets
-directory take precedence. For example, `/assets/screenshot-1.png` would win over `/tags/4.3/screenshot-1.png`
-(or jpg, jpeg, gif).
-2. This is the second screen shot
+1. Shipping Import admin page with dump upload and preview button.
+2. Source (dump) and destination (current site) side-by-side preview.
+3. Count comparison table with match/different/missing status badges.
 
 == Changelog ==
 
-= 1.0 =
-* A change since the previous version.
-* Another change.
-
-= 0.5 =
-* List versions from most recent at top to oldest at bottom.
+= 1.0.0 =
+* Initial public release.
+* Added SQL/GZ/ZIP shipping import support.
+* Added pre-import backup of current prefix tables.
+* Added source vs destination preview with detected tables and sample rows.
+* Added color-highlighted comparison statuses for easier review.
 
 == Upgrade Notice ==
 
-= 1.0 =
-Upgrade notices describe the reason a user should upgrade.  No more than 300 characters.
-
-= 0.5 =
-This version fixes a security related bug.  Upgrade immediately.
-
-== Arbitrary section ==
-
-You may provide arbitrary sections, in the same format as the ones above.  This may be of use for extremely complicated
-plugins where more information needs to be conveyed that doesn't fit into the categories of "description" or
-"installation."  Arbitrary sections will be shown below the built-in sections outlined above.
-
-== A brief Markdown Example ==
-
-Ordered list:
-
-1. Some feature
-1. Another feature
-1. Something else about the plugin
-
-Unordered list:
-
-* something
-* something else
-* third thing
-
-Here's a link to [WordPress](http://wordpress.org/ "Your favorite software") and one to [Markdown's Syntax Documentation][markdown syntax].
-Titles are optional, naturally.
-
-[markdown syntax]: http://daringfireball.net/projects/markdown/syntax
-            "Markdown is what the parser uses to process much of the readme file"
-
-Markdown uses email style notation for blockquotes and I've been told:
-> Asterisks for *emphasis*. Double it up  for **strong**.
-
-`<?php code(); // goes in backticks ?>`
+= 1.0.0 =
+Initial release of GN Import Export WooCommerce Shipping Settings.

@@ -105,6 +105,37 @@ class Gn_Import_Export_Woocommerce_Shipping_Settings_Admin {
 			$this->version,
 			false
 		);
+
+		wp_localize_script(
+			$this->plugin_name,
+			'gnIeWcssAdmin',
+			array(
+				'ajaxUrl'              => admin_url( 'admin-ajax.php' ),
+				'previewAction'        => 'gn_ie_wcss_preview_dump',
+				'previewNonce'         => wp_create_nonce( 'gn_ie_wcss_preview_nonce' ),
+				'destinationSnapshot'  => $this->get_current_site_shipping_snapshot(),
+				'i18n'                 => array(
+					'previewStatusIdle'    => __( 'Select a dump file and click "Analyze Dump Preview".', 'gn-import-export-woocommerce-shipping-settings' ),
+					'previewStatusLoading' => __( 'Analyzing dump file...', 'gn-import-export-woocommerce-shipping-settings' ),
+					'previewStatusReady'   => __( 'Preview updated. Review source and destination differences below.', 'gn-import-export-woocommerce-shipping-settings' ),
+					'previewStatusError'   => __( 'Could not load preview data.', 'gn-import-export-woocommerce-shipping-settings' ),
+					'selectFileError'      => __( 'Please select a dump file first.', 'gn-import-export-woocommerce-shipping-settings' ),
+					'tableHeader'          => __( 'Table', 'gn-import-export-woocommerce-shipping-settings' ),
+					'rowsLabel'            => __( 'Rows', 'gn-import-export-woocommerce-shipping-settings' ),
+					'prefixLabel'          => __( 'DB Prefix', 'gn-import-export-woocommerce-shipping-settings' ),
+					'prefixNotFound'       => __( '(not found)', 'gn-import-export-woocommerce-shipping-settings' ),
+					'tableLabel'           => __( 'Detected table', 'gn-import-export-woocommerce-shipping-settings' ),
+					'sourceHeader'         => __( 'Source', 'gn-import-export-woocommerce-shipping-settings' ),
+					'destinationHeader'    => __( 'Destination', 'gn-import-export-woocommerce-shipping-settings' ),
+					'statusHeader'         => __( 'Status', 'gn-import-export-woocommerce-shipping-settings' ),
+					'noRowsLabel'          => __( 'No rows available.', 'gn-import-export-woocommerce-shipping-settings' ),
+					'missingTableLabel'    => __( 'Table does not exist on destination.', 'gn-import-export-woocommerce-shipping-settings' ),
+					'statusMatch'          => __( 'Match', 'gn-import-export-woocommerce-shipping-settings' ),
+					'statusDifferent'      => __( 'Different', 'gn-import-export-woocommerce-shipping-settings' ),
+					'statusMissing'        => __( 'Missing table', 'gn-import-export-woocommerce-shipping-settings' ),
+				),
+			)
+		);
 	}
 
 	/**
@@ -198,6 +229,67 @@ class Gn_Import_Export_Woocommerce_Shipping_Settings_Admin {
 	}
 
 	/**
+	 * Build source/destination preview using uploaded dump.
+	 */
+	public function handle_preview_action() {
+		if ( ! $this->current_user_can_manage_imports() ) {
+			wp_send_json_error(
+				array(
+					'message' => __( 'You are not allowed to perform this action.', 'gn-import-export-woocommerce-shipping-settings' ),
+				),
+				403
+			);
+		}
+
+		check_ajax_referer( 'gn_ie_wcss_preview_nonce', 'nonce' );
+
+		if ( empty( $_FILES['dump_file'] ) || ! is_array( $_FILES['dump_file'] ) ) {
+			wp_send_json_error(
+				array(
+					'message' => __( 'No file was uploaded for preview.', 'gn-import-export-woocommerce-shipping-settings' ),
+				),
+				400
+			);
+		}
+
+		$uploaded_dump = $this->store_uploaded_dump_file( $_FILES['dump_file'] );
+		if ( is_wp_error( $uploaded_dump ) ) {
+			wp_send_json_error(
+				array(
+					'message' => $uploaded_dump->get_error_message(),
+				),
+				400
+			);
+		}
+
+		$parsed_data = $this->parse_shipping_data_from_dump( $uploaded_dump['path'], $uploaded_dump['extension'] );
+
+		if ( file_exists( $uploaded_dump['path'] ) ) {
+			@unlink( $uploaded_dump['path'] );
+		}
+
+		if ( is_wp_error( $parsed_data ) ) {
+			wp_send_json_error(
+				array(
+					'message' => $parsed_data->get_error_message(),
+				),
+				400
+			);
+		}
+
+		$source_snapshot = $this->get_source_dump_shipping_snapshot( $parsed_data );
+		$destination_snapshot = $this->get_current_site_shipping_snapshot();
+
+		wp_send_json_success(
+			array(
+				'source'      => $source_snapshot,
+				'destination' => $destination_snapshot,
+				'comparison'  => $this->build_shipping_snapshot_comparison( $source_snapshot, $destination_snapshot ),
+			)
+		);
+	}
+
+	/**
 	 * Render stored notice.
 	 */
 	public function maybe_display_admin_notice() {
@@ -277,6 +369,12 @@ class Gn_Import_Export_Woocommerce_Shipping_Settings_Admin {
 
 		$parsed_data = array(
 			'source_prefix'  => '',
+			'detected_tables' => array(
+				'zones'          => '',
+				'zone_methods'   => '',
+				'zone_locations' => '',
+				'options'        => '',
+			),
 			'zones'          => array(),
 			'zone_methods'   => array(),
 			'zone_locations' => array(),
@@ -304,16 +402,9 @@ class Gn_Import_Export_Woocommerce_Shipping_Settings_Admin {
 				$table_name = $insert_match[1];
 				$inline_data = isset( $insert_match[3] ) ? trim( $insert_match[3] ) : '';
 
-				if ( $this->table_name_has_suffix( $table_name, 'woocommerce_shipping_zone_locations' ) ) {
-					$current_block = 'zone_locations';
-				} elseif ( $this->table_name_has_suffix( $table_name, 'woocommerce_shipping_zone_methods' ) ) {
-					$current_block = 'zone_methods';
-				} elseif ( $this->table_name_has_suffix( $table_name, 'woocommerce_shipping_zones' ) ) {
-					$current_block = 'zones';
-				} elseif ( $this->table_name_has_suffix( $table_name, 'options' ) ) {
-					$current_block = 'options';
-				} else {
-					$current_block = '';
+				$current_block = $this->get_shipping_block_key_from_table_name( $table_name );
+				if ( '' !== $current_block && '' === $parsed_data['detected_tables'][ $current_block ] ) {
+					$parsed_data['detected_tables'][ $current_block ] = $table_name;
 				}
 
 				if ( '' !== $current_block && '' !== $inline_data ) {
@@ -348,6 +439,297 @@ class Gn_Import_Export_Woocommerce_Shipping_Settings_Admin {
 		$parsed_data['options'] = array_values( $parsed_data['options'] );
 
 		return $parsed_data;
+	}
+
+	/**
+	 * Shipping table metadata for parsing and preview rendering.
+	 *
+	 * @return array
+	 */
+	private function get_shipping_table_definitions() {
+		return array(
+			'zones'          => array(
+				'data_key' => 'zones',
+				'suffix'   => 'woocommerce_shipping_zones',
+				'label'    => __( 'Shipping Zones', 'gn-import-export-woocommerce-shipping-settings' ),
+				'columns'  => array( 'zone_id', 'zone_name', 'zone_order' ),
+			),
+			'zone_methods'   => array(
+				'data_key' => 'zone_methods',
+				'suffix'   => 'woocommerce_shipping_zone_methods',
+				'label'    => __( 'Zone Methods', 'gn-import-export-woocommerce-shipping-settings' ),
+				'columns'  => array( 'zone_id', 'instance_id', 'method_id', 'method_order', 'is_enabled' ),
+			),
+			'zone_locations' => array(
+				'data_key' => 'zone_locations',
+				'suffix'   => 'woocommerce_shipping_zone_locations',
+				'label'    => __( 'Zone Locations', 'gn-import-export-woocommerce-shipping-settings' ),
+				'columns'  => array( 'location_id', 'zone_id', 'location_code', 'location_type' ),
+			),
+			'options'        => array(
+				'data_key'          => 'options',
+				'suffix'            => 'options',
+				'label'             => __( 'Shipping Method Settings', 'gn-import-export-woocommerce-shipping-settings' ),
+				'columns'           => array( 'option_name', 'option_value', 'autoload' ),
+				'is_options_table'  => true,
+			),
+		);
+	}
+
+	/**
+	 * Resolve parsed block key from SQL table name.
+	 *
+	 * @param string $table_name SQL table name.
+	 * @return string
+	 */
+	private function get_shipping_block_key_from_table_name( $table_name ) {
+		$table_definitions = $this->get_shipping_table_definitions();
+
+		foreach ( $table_definitions as $table_key => $table_definition ) {
+			if ( $this->table_name_has_suffix( $table_name, $table_definition['suffix'] ) ) {
+				return $table_key;
+			}
+		}
+
+		return '';
+	}
+
+	/**
+	 * Build preview snapshot for source dump data.
+	 *
+	 * @param array $parsed_data Parsed dump data.
+	 * @param int   $sample_limit Number of sample rows per table.
+	 * @return array
+	 */
+	private function get_source_dump_shipping_snapshot( $parsed_data, $sample_limit = 3 ) {
+		$table_definitions = $this->get_shipping_table_definitions();
+		$tables = array();
+
+		foreach ( $table_definitions as $table_key => $table_definition ) {
+			$data_key = $table_definition['data_key'];
+			$rows = isset( $parsed_data[ $data_key ] ) && is_array( $parsed_data[ $data_key ] ) ? $parsed_data[ $data_key ] : array();
+
+			$table_name = '';
+			if ( ! empty( $parsed_data['detected_tables'][ $table_key ] ) ) {
+				$table_name = $parsed_data['detected_tables'][ $table_key ];
+			} elseif ( ! empty( $parsed_data['source_prefix'] ) ) {
+				$table_name = $parsed_data['source_prefix'] . $table_definition['suffix'];
+			} else {
+				$table_name = $table_definition['suffix'];
+			}
+
+			$tables[] = array(
+				'key'         => $table_key,
+				'label'       => $table_definition['label'],
+				'table_name'  => $table_name,
+				'exists'      => '' !== $table_name,
+				'count'       => count( $rows ),
+				'sample_rows' => $this->normalize_preview_rows( array_slice( $rows, 0, $sample_limit ) ),
+			);
+		}
+
+		return array(
+			'prefix' => isset( $parsed_data['source_prefix'] ) ? $parsed_data['source_prefix'] : '',
+			'tables' => $tables,
+		);
+	}
+
+	/**
+	 * Build preview snapshot for current destination site.
+	 *
+	 * @param int $sample_limit Number of sample rows per table.
+	 * @return array
+	 */
+	private function get_current_site_shipping_snapshot( $sample_limit = 3 ) {
+		global $wpdb;
+
+		$table_definitions = $this->get_shipping_table_definitions();
+		$tables = array();
+
+		foreach ( $table_definitions as $table_key => $table_definition ) {
+			$table_name = $wpdb->prefix . $table_definition['suffix'];
+			$table_exists = $this->table_exists( $table_name );
+			$count = 0;
+			$sample_rows = array();
+
+			if ( $table_exists ) {
+				$table_identifier = '`' . $this->escape_identifier( $table_name ) . '`';
+				$column_sql_parts = array();
+
+				foreach ( $table_definition['columns'] as $column_name ) {
+					$column_sql_parts[] = '`' . $this->escape_identifier( $column_name ) . '`';
+				}
+
+				$columns_sql = implode( ', ', $column_sql_parts );
+
+				if ( ! empty( $table_definition['is_options_table'] ) ) {
+					$where_clause = " WHERE `option_name` REGEXP '^woocommerce_[A-Za-z0-9_]+_[0-9]+_settings$'";
+					$count = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$table_identifier}{$where_clause}" );
+					$sample_rows = $wpdb->get_results(
+						"SELECT {$columns_sql} FROM {$table_identifier}{$where_clause} ORDER BY `option_name` ASC LIMIT " . (int) $sample_limit,
+						ARRAY_A
+					);
+				} else {
+					$count = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$table_identifier}" );
+					$sample_rows = $wpdb->get_results(
+						"SELECT {$columns_sql} FROM {$table_identifier} LIMIT " . (int) $sample_limit,
+						ARRAY_A
+					);
+				}
+			}
+
+			$tables[] = array(
+				'key'         => $table_key,
+				'label'       => $table_definition['label'],
+				'table_name'  => $table_name,
+				'exists'      => $table_exists,
+				'count'       => $count,
+				'sample_rows' => $this->normalize_preview_rows( is_array( $sample_rows ) ? $sample_rows : array() ),
+			);
+		}
+
+		return array(
+			'prefix' => $wpdb->prefix,
+			'tables' => $tables,
+		);
+	}
+
+	/**
+	 * Build source vs destination comparison rows.
+	 *
+	 * @param array $source_snapshot Source preview data.
+	 * @param array $destination_snapshot Destination preview data.
+	 * @return array
+	 */
+	private function build_shipping_snapshot_comparison( $source_snapshot, $destination_snapshot ) {
+		$table_definitions = $this->get_shipping_table_definitions();
+		$source_tables_by_key = array();
+		$destination_tables_by_key = array();
+		$comparison_rows = array();
+
+		if ( ! empty( $source_snapshot['tables'] ) && is_array( $source_snapshot['tables'] ) ) {
+			foreach ( $source_snapshot['tables'] as $table_row ) {
+				if ( isset( $table_row['key'] ) ) {
+					$source_tables_by_key[ $table_row['key'] ] = $table_row;
+				}
+			}
+		}
+
+		if ( ! empty( $destination_snapshot['tables'] ) && is_array( $destination_snapshot['tables'] ) ) {
+			foreach ( $destination_snapshot['tables'] as $table_row ) {
+				if ( isset( $table_row['key'] ) ) {
+					$destination_tables_by_key[ $table_row['key'] ] = $table_row;
+				}
+			}
+		}
+
+		foreach ( $table_definitions as $table_key => $table_definition ) {
+			$source_table = isset( $source_tables_by_key[ $table_key ] ) ? $source_tables_by_key[ $table_key ] : array();
+			$destination_table = isset( $destination_tables_by_key[ $table_key ] ) ? $destination_tables_by_key[ $table_key ] : array();
+			$source_count = isset( $source_table['count'] ) ? (int) $source_table['count'] : 0;
+			$destination_count = isset( $destination_table['count'] ) ? (int) $destination_table['count'] : 0;
+			$destination_exists = ! empty( $destination_table['exists'] );
+			$status = 'match';
+
+			if ( ! $destination_exists ) {
+				$status = 'missing_table';
+			} elseif ( $source_count !== $destination_count ) {
+				$status = 'different';
+			}
+
+			$comparison_rows[] = array(
+				'key'               => $table_key,
+				'label'             => $table_definition['label'],
+				'source_count'      => $source_count,
+				'destination_count' => $destination_count,
+				'status'            => $status,
+			);
+		}
+
+		return $comparison_rows;
+	}
+
+	/**
+	 * Check whether table exists.
+	 *
+	 * @param string $table_name Table name.
+	 * @return bool
+	 */
+	private function table_exists( $table_name ) {
+		global $wpdb;
+
+		$found_table = $wpdb->get_var(
+			$wpdb->prepare(
+				'SHOW TABLES LIKE %s',
+				$table_name
+			)
+		);
+
+		return $table_name === $found_table;
+	}
+
+	/**
+	 * Normalize preview rows for safe compact display.
+	 *
+	 * @param array $rows Table rows.
+	 * @return array
+	 */
+	private function normalize_preview_rows( $rows ) {
+		$normalized_rows = array();
+
+		foreach ( $rows as $row ) {
+			if ( ! is_array( $row ) ) {
+				continue;
+			}
+
+			$normalized_row = array();
+			foreach ( $row as $column_name => $column_value ) {
+				$normalized_row[ (string) $column_name ] = $this->normalize_preview_value( $column_value );
+			}
+			$normalized_rows[] = $normalized_row;
+		}
+
+		return $normalized_rows;
+	}
+
+	/**
+	 * Normalize a preview value and keep it short.
+	 *
+	 * @param mixed $value Raw value.
+	 * @param int   $max_length Max preview length.
+	 * @return string
+	 */
+	private function normalize_preview_value( $value, $max_length = 180 ) {
+		if ( null === $value ) {
+			return 'NULL';
+		}
+
+		if ( is_bool( $value ) ) {
+			return $value ? '1' : '0';
+		}
+
+		if ( is_scalar( $value ) ) {
+			$string_value = (string) $value;
+		} else {
+			$string_value = wp_json_encode( $value );
+		}
+
+		if ( ! is_string( $string_value ) ) {
+			return '';
+		}
+
+		$collapsed_value = preg_replace( '/\s+/', ' ', $string_value );
+		if ( ! is_string( $collapsed_value ) ) {
+			$collapsed_value = $string_value;
+		}
+
+		$collapsed_value = trim( $collapsed_value );
+
+		if ( strlen( $collapsed_value ) > $max_length ) {
+			return substr( $collapsed_value, 0, $max_length - 3 ) . '...';
+		}
+
+		return $collapsed_value;
 	}
 
 	/**
