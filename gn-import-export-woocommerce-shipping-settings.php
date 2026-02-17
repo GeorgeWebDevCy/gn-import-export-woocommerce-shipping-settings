@@ -30,6 +30,12 @@ if ( ! defined( 'WPINC' ) ) {
 	die;
 }
 
+// Load Composer dependencies when available.
+$gn_import_export_woocommerce_shipping_settings_autoloader = plugin_dir_path( __FILE__ ) . 'vendor/autoload.php';
+if ( file_exists( $gn_import_export_woocommerce_shipping_settings_autoloader ) ) {
+	require_once $gn_import_export_woocommerce_shipping_settings_autoloader;
+}
+
 /**
  * Currently plugin version.
  * Start at version 1.0.0 and use SemVer - https://semver.org
@@ -57,6 +63,26 @@ function deactivate_gn_import_export_woocommerce_shipping_settings() {
 
 register_activation_hook( __FILE__, 'activate_gn_import_export_woocommerce_shipping_settings' );
 register_deactivation_hook( __FILE__, 'deactivate_gn_import_export_woocommerce_shipping_settings' );
+
+/**
+ * Register update checks against the public GitHub repository.
+ *
+ * @since    1.0.0
+ */
+function gn_import_export_woocommerce_shipping_settings_register_updates() {
+	if ( ! class_exists( '\YahnisElsts\PluginUpdateChecker\v5\PucFactory' ) ) {
+		return;
+	}
+
+	$update_checker = \YahnisElsts\PluginUpdateChecker\v5\PucFactory::buildUpdateChecker(
+		'https://github.com/GeorgeWebDevCy/gn-import-export-woocommerce-shipping-settings/',
+		__FILE__,
+		'gn-import-export-woocommerce-shipping-settings'
+	);
+
+	$update_checker->setBranch( 'main' );
+}
+gn_import_export_woocommerce_shipping_settings_register_updates();
 
 /**
  * The core plugin class that is used to define internationalization,
