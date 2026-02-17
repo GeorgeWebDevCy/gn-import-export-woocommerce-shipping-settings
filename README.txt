@@ -5,7 +5,7 @@ Tags: woocommerce, shipping, import, export, migration, sql
 Requires at least: 5.8
 Requires PHP: 7.4
 Tested up to: 6.9.1
-Stable tag: 1.1.0
+Stable tag: 1.1.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -90,6 +90,10 @@ Yes. The plugin creates a backup of current-prefix tables before applying import
 
 == Changelog ==
 
+= 1.1.1 =
+* Maintenance release.
+* Bumped plugin version metadata and readme release tags.
+
 = 1.1.0 =
 * Added standalone top-level admin menu for Shipping Import.
 * Added Plugins screen action link to open Shipping Import directly.
@@ -105,6 +109,9 @@ Yes. The plugin creates a backup of current-prefix tables before applying import
 * Added color-highlighted comparison statuses for easier review.
 
 == Upgrade Notice ==
+
+= 1.1.1 =
+Maintenance release with version and documentation metadata updates.
 
 = 1.1.0 =
 Adds a standalone admin menu, a Plugins page quick link, and a richer pre-import source/destination preview.

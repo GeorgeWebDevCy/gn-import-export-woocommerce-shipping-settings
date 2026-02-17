@@ -39,6 +39,11 @@ Before importing, use **Analyze Dump Preview** on the admin screen to inspect:
 
 ## Release Notes
 
+### 1.1.1
+
+- Maintenance release.
+- Bumped plugin version metadata and readme release tags.
+
 ### 1.1.0
 
 - Added a standalone top-level **Shipping Import** admin menu.

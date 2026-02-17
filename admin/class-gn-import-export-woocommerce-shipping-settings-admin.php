@@ -71,7 +71,7 @@ class Gn_Import_Export_Woocommerce_Shipping_Settings_Admin {
 			array(
 				'page' => $this->plugin_name,
 			),
-			admin_url( 'admin.php' )
+			'admin.php'
 		);
 
 		array_unshift(
